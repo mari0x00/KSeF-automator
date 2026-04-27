@@ -1,0 +1,26 @@
+# Kontrahenci.
+# Skopiuj do config/contractors.yaml i uzupelnij realnymi wpisami.
+
+example-client:
+  nazwa: "Example Client Sp. z o.o."
+  nip: "1234567890"
+  ulica: "ul. Testowa 1"
+  kod_pocztowy: "00-100"
+  miasto: "Krakow"
+  termin_platnosci: 14
+  numer_zamowienia: ~
+  data_sprzedazy_koniec_miesiaca: false
+  default_amount: 5000
+  default_description: "Uslugi programistyczne"
+
+example-client-po:
+  nazwa: "Example Client Sp. z o.o."
+  nip: "1234567890"
+  ulica: "ul. Testowa 1"
+  kod_pocztowy: "00-100"
+  miasto: "Krakow"
+  termin_platnosci: 14
+  numer_zamowienia: "PO-EXAMPLE-2026-001"
+  data_sprzedazy_koniec_miesiaca: true
+  default_amount: 2500
+  default_description: "Programming and support services for $M $Y"

@@ -1,0 +1,5 @@
+fpdf2>=2.7.0
+lxml>=4.9.0
+PyYAML>=6.0
+num2words>=0.5.13
+ksef2>=0.10.0

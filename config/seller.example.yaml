@@ -1,0 +1,10 @@
+# Dane sprzedawcy.
+# Skopiuj do config/seller.yaml i uzupelnij prawdziwymi danymi.
+
+nazwa: "EXAMPLE SOFTWARE SP. Z O.O."
+nip: "9999999999"
+ulica: "ul. Przykladowa 10/2"
+kod_pocztowy: "00-001"
+miasto: "Warszawa"
+rachunek_bankowy: "11112222333344445555666677"
+swift: "EXAMPLPWXXX"
