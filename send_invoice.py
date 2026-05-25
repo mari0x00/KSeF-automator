@@ -11,10 +11,13 @@ Użycie:
 """
 
 import argparse
+import logging
 import sys
+import traceback
 from pathlib import Path
 
 from lxml import etree
+from pydantic import ValidationError
 from ksef2 import Client, Environment
 from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
 from ksef2.domain.models import FormSchema
@@ -26,6 +29,32 @@ import yaml
 BASE_DIR = Path(__file__).parent
 CONFIG_DIR = BASE_DIR / "config"
 XSD_DIR = BASE_DIR / "xsd"
+
+
+def _print_exception_details(e: BaseException) -> None:
+    """Print the full exception chain and any pydantic validation details.
+
+    KSeF SDK wraps the underlying pydantic.ValidationError with `from e`,
+    so `print(e)` only shows "Invalid response payload". Walk the chain to
+    surface which field/value the server response failed on.
+    """
+    print("\n--- DEBUG: pełny łańcuch wyjątków ---")
+    current: BaseException | None = e
+    depth = 0
+    while current is not None:
+        prefix = "  " * depth
+        print(f"{prefix}[{depth}] {type(current).__module__}.{type(current).__name__}: {current}")
+        if isinstance(current, ValidationError):
+            print(f"{prefix}    Pydantic errors:")
+            for err in current.errors():
+                loc = ".".join(str(p) for p in err.get("loc", ()))
+                print(f"{prefix}      - loc={loc!s} type={err.get('type')!r} "
+                      f"msg={err.get('msg')!r} input={err.get('input')!r}")
+        current = current.__cause__ or current.__context__
+        depth += 1
+    print("--- traceback ---")
+    traceback.print_exception(e)
+    print("--- /DEBUG ---\n")
 
 
 def load_seller():
@@ -134,6 +163,7 @@ def send_invoice(xml_path, cert_path, key_path, key_password, environment):
 
     except exceptions.KSeFAuthError as e:
         print(f"\nBŁĄD autentykacji: {e}")
+        _print_exception_details(e)
         sys.exit(1)
     except exceptions.KSeFInvoiceProcessingTimeoutError:
         print("\nBŁĄD: Timeout — faktura nie została przetworzona w wymaganym czasie.")
@@ -141,9 +171,11 @@ def send_invoice(xml_path, cert_path, key_path, key_password, environment):
         sys.exit(1)
     except exceptions.KSeFApiError as e:
         print(f"\nBŁĄD API KSeF: {e}")
+        _print_exception_details(e)
         sys.exit(1)
     except exceptions.KSeFException as e:
         print(f"\nBŁĄD KSeF: {e}")
+        _print_exception_details(e)
         sys.exit(1)
     finally:
         client.close()
@@ -159,7 +191,20 @@ def main():
     parser.add_argument("--key-password", default=None, help="Hasło do klucza (jeśli zaszyfrowany)")
     parser.add_argument("--prod", action="store_true", help="Wyślij na środowisko PRODUKCYJNE (domyślnie: TEST)")
     parser.add_argument("--skip-validation", action="store_true", help="Pomiń walidację XSD przed wysyłką")
+    parser.add_argument("--debug", action="store_true", help="Włącz szczegółowe logi HTTP (httpx + ksef2)")
     args = parser.parse_args()
+
+    if args.debug:
+        # httpx logs each request line at DEBUG; httpcore logs request/response
+        # headers and bodies. Together they show the raw payload that the SDK
+        # failed to parse into a Pydantic model.
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        )
+        logging.getLogger("httpx").setLevel(logging.DEBUG)
+        logging.getLogger("httpcore").setLevel(logging.DEBUG)
+        logging.getLogger("ksef2").setLevel(logging.DEBUG)
 
     # Sprawdź pliki
     if not args.xml.exists():
