@@ -9,7 +9,10 @@ example-client:
   miasto: "Krakow"
   termin_platnosci: 14
   numer_zamowienia: ~
+  jst: 2
+  gv: 2
   data_sprzedazy_koniec_miesiaca: false
+  default_miejsce_wystawienia: "Warszawa"
   default_amount: 5000
   default_description: "Uslugi programistyczne"
 
@@ -21,6 +24,9 @@ example-client-po:
   miasto: "Krakow"
   termin_platnosci: 14
   numer_zamowienia: "PO-EXAMPLE-2026-001"
+  jst: 2
+  gv: 2
   data_sprzedazy_koniec_miesiaca: true
+  default_miejsce_wystawienia: "Warszawa"
   default_amount: 2500
   default_description: "Programming and support services for $M $Y"

@@ -479,15 +479,18 @@ def generate_ksef_xml(inv):
     etree.SubElement(adres2, "AdresL2").text = (
         f"{inv['nabywca']['kod_pocztowy']} {inv['nabywca']['miasto']}"
     )
-    etree.SubElement(podmiot2, "JST").text = "2"
-    etree.SubElement(podmiot2, "GV").text = "2"
+    etree.SubElement(podmiot2, "JST").text = str(inv["jst"])
+    etree.SubElement(podmiot2, "GV").text = str(inv["gv"])
 
     # Fa — dane faktury
     fa = etree.SubElement(root, "Fa")
     etree.SubElement(fa, "KodWaluty").text = "PLN"
     etree.SubElement(fa, "P_1").text = inv["data_wystawienia"]
-    etree.SubElement(fa, "P_1M").text = inv["data_sprzedazy"]
+    if inv.get("miejsce_wystawienia"):
+        etree.SubElement(fa, "P_1M").text = inv["miejsce_wystawienia"]
     etree.SubElement(fa, "P_2").text = inv["numer"]
+    if inv["data_sprzedazy"] != inv["data_wystawienia"]:
+        etree.SubElement(fa, "P_6").text = inv["data_sprzedazy"]
     etree.SubElement(fa, "P_13_1").text = str(inv["netto"])
     etree.SubElement(fa, "P_14_1").text = str(inv["vat"])
     etree.SubElement(fa, "P_15").text = str(inv["brutto"])
@@ -525,6 +528,9 @@ def generate_ksef_xml(inv):
     etree.SubElement(platnosc, "FormaPlatnosci").text = "6"
     rachunek = etree.SubElement(platnosc, "RachunekBankowy")
     etree.SubElement(rachunek, "NrRB").text = inv["sprzedawca"]["rachunek_bankowy"].replace(" ", "")
+    swift = inv["sprzedawca"].get("swift")
+    if swift:
+        etree.SubElement(rachunek, "SWIFT").text = str(swift).strip().upper()
 
     # WarunkiTransakcji / Zamowienia
     if inv.get("numer_zamowienia"):
@@ -593,6 +599,19 @@ def main():
     payment_date = issue_date + timedelta(days=payment_days)
 
     po_number = args.po or contractor.get("numer_zamowienia")
+    jst = str(contractor.get("jst", 2))
+    gv = str(contractor.get("gv", 2))
+    place_of_issue = (
+        contractor.get("default_miejsce_wystawienia")
+        or contractor.get("default_miejsce_sprzedazy")
+        or seller.get("miasto")
+    )
+    if jst not in {"1", "2"}:
+        print("Błąd: pole 'jst' w contractors.yaml musi mieć wartość 1 albo 2.")
+        sys.exit(1)
+    if gv not in {"1", "2"}:
+        print("Błąd: pole 'gv' w contractors.yaml musi mieć wartość 1 albo 2.")
+        sys.exit(1)
 
     eom = contractor.get("data_sprzedazy_koniec_miesiaca", False)
     svc_date = service_date(issue_date, eom)
@@ -609,6 +628,9 @@ def main():
         "brutto": gross,
         "termin_platnosci": payment_date.strftime("%Y-%m-%d"),
         "numer_zamowienia": po_number,
+        "miejsce_wystawienia": place_of_issue,
+        "jst": jst,
+        "gv": gv,
     }
 
     OUTPUT_DIR.mkdir(exist_ok=True)

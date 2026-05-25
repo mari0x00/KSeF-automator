@@ -62,7 +62,10 @@ example-client:
   miasto: "Krakow"
   termin_platnosci: 14
   numer_zamowienia: ~
+  jst: 2
+  gv: 2
   data_sprzedazy_koniec_miesiaca: false
+  default_miejsce_wystawienia: "Warszawa"
   default_amount: 5000
   default_description: "Uslugi programistyczne"
 
@@ -74,7 +77,10 @@ example-client-po:
   miasto: "Krakow"
   termin_platnosci: 14
   numer_zamowienia: "PO-EXAMPLE-2026-001"
+  jst: 2
+  gv: 2
   data_sprzedazy_koniec_miesiaca: true
+  default_miejsce_wystawienia: "Warszawa"
   default_amount: 2500
   default_description: "DevSecOps services for $M $Y"
 ```
@@ -83,7 +89,10 @@ example-client-po:
 |---|---|
 | `termin_platnosci` | Dni na zaplate (od daty wystawienia) |
 | `numer_zamowienia` | Numer PO (`~` = brak) |
+| `jst` | Znacznik jednostki podrzednej JST: `1` = tak, `2` = nie (domyslnie `2`) |
+| `gv` | Znacznik czlonka grupy VAT: `1` = tak, `2` = nie (domyslnie `2`) |
 | `data_sprzedazy_koniec_miesiaca` | `true` = ostatni dzien miesiaca, `false` = data wystawienia |
+| `default_miejsce_wystawienia` | Domyslne miejsce wystawienia faktury (mapowane do `P_1M`) |
 | `default_amount` | Domyslna kwota netto (nadpisywana przez `-a`) |
 | `default_description` | Domyslny opis (`$M` = miesiac po angielsku, `$Y` = rok) |
 
@@ -129,7 +138,7 @@ Bez znacznikow opis jest uzywany bez zmian.
 python3 send_invoice.py output/A1_3_2026.xml
 
 # PRODUKCJA (wymaga certyfikatu)
-python3 send_invoice.py output/A1_3_2026.xml --cert config/cert.crt --key config/cert.key --key-password "<KEY_PASSWORD>" --prod
+python3 send_invoice.py output/A1_3_2026.xml --cert config/cert.crt --key config/cert.key --key-password "cert-pass" --prod
 ```
 
 | Argument | Opis |
@@ -143,10 +152,23 @@ python3 send_invoice.py output/A1_3_2026.xml --cert config/cert.crt --key config
 
 Na TEST certyfikat generuje sie automatycznie.
 
+## Batch — wystawianie wielu faktur
+
+Edytuj liste `ALIASES` w `invoice_default.py`, a nastepnie:
+
+```bash
+python3 invoice_default.py
+```
+
+Skrypt wystawia faktury dla wszystkich zdefiniowanych aliasow z domyslnymi wartosciami, waliduje XSD i wyswietla podsumowanie.
+
 ## Typowe flow
 
 ```bash
-# Pojedyncza faktura
+# Opcja A: batch — wszystkie faktury na raz
+python3 invoice_default.py
+
+# Opcja B: pojedyncza faktura
 python3 generate_invoice.py example-client-po
 
 # Wyslij na TEST
